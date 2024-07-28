@@ -166,6 +166,7 @@ impl<'comments> Formatter<'comments> {
             None => document,
             Some(Target::Erlang) => docvec!["@target(erlang)", line(), document],
             Some(Target::JavaScript) => docvec!["@target(javascript)", line(), document],
+            Some(Target::Python) => docvec!["@target(python)", line(), document],
         };
 
         comments.to_doc().append(document.group())

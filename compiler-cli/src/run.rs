@@ -110,6 +110,13 @@ pub fn command(
             }
             Runtime::Bun => run_javascript_bun(&paths, &main_function.package, &module, arguments),
         },
+        Target::Python => match runtime {
+            Some(r) => Err(Error::InvalidRuntime {
+                target: Target::Python,
+                invalid_runtime: r,
+            }),
+            _ => run_python(&paths, &root_config.name, &module, arguments),
+        },
     }?;
 
     std::process::exit(status);
@@ -147,6 +154,15 @@ fn run_erlang(
     }
 
     ProjectIO::new().exec("erl", &args, &[], None, Stdio::Inherit)
+}
+
+fn run_python(
+    paths: &ProjectPaths,
+    package: &str,
+    module: &str,
+    arguments: Vec<String>,
+) -> Result<i32, Error> {
+    return Ok(2);
 }
 
 fn run_javascript_bun(

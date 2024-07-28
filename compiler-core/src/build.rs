@@ -62,6 +62,9 @@ pub enum Target {
     #[strum(serialize = "javascript", serialize = "js")]
     #[serde(rename = "javascript", alias = "js")]
     JavaScript,
+    #[strum(serialize = "python", serialize = "python")]
+    #[serde(rename = "python", alias = "python")]
+    Python,
 }
 
 impl Target {
@@ -130,6 +133,7 @@ pub enum TargetCodegenConfiguration {
         emit_typescript_definitions: bool,
         prelude_location: Utf8PathBuf,
     },
+    Python {/* TODO: Not sure what this struct needs */},
     Erlang {
         app_file: Option<ErlangAppCodegenConfiguration>,
     },
@@ -140,6 +144,7 @@ impl TargetCodegenConfiguration {
         match self {
             Self::JavaScript { .. } => Target::JavaScript,
             Self::Erlang { .. } => Target::Erlang,
+            Self::Python { .. } => Target::Python,
         }
     }
 }

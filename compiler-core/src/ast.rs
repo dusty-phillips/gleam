@@ -639,6 +639,7 @@ pub struct Function<T, Expr> {
     pub documentation: Option<(u32, EcoString)>,
     pub external_erlang: Option<(EcoString, EcoString)>,
     pub external_javascript: Option<(EcoString, EcoString)>,
+    pub external_python: Option<(EcoString, EcoString)>,
     pub implementations: Implementations,
 }
 

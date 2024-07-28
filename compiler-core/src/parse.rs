@@ -118,6 +118,7 @@ struct Attributes {
     deprecated: Deprecation,
     external_erlang: Option<(EcoString, EcoString)>,
     external_javascript: Option<(EcoString, EcoString)>,
+    external_python: Option<(EcoString, EcoString)>,
     internal: InternalAttribute,
 }
 
@@ -130,6 +131,7 @@ impl Attributes {
         match target {
             Target::Erlang => self.external_erlang.is_some(),
             Target::JavaScript => self.external_javascript.is_some(),
+            Target::Python => self.external_python.is_some(),
         }
     }
 
@@ -137,6 +139,7 @@ impl Attributes {
         match target {
             Target::Erlang => self.external_erlang = ext,
             Target::JavaScript => self.external_javascript = ext,
+            Target::Python => self.external_python = ext,
         }
     }
 }
@@ -1792,12 +1795,15 @@ where
             deprecation: std::mem::take(&mut attributes.deprecated),
             external_erlang: attributes.external_erlang.take(),
             external_javascript: attributes.external_javascript.take(),
+            external_python: attributes.external_python.take(),
             implementations: Implementations {
                 gleam: true,
                 can_run_on_erlang: true,
                 can_run_on_javascript: true,
+                can_run_on_python: true,
                 uses_erlang_externals: false,
                 uses_javascript_externals: false,
+                uses_python_externals: false,
             },
         })))
     }
@@ -2534,8 +2540,10 @@ where
                     gleam: true,
                     can_run_on_erlang: true,
                     can_run_on_javascript: true,
+                    can_run_on_python: true,
                     uses_erlang_externals: false,
                     uses_javascript_externals: false,
+                    uses_python_externals: false,
                 },
             })))
         } else {

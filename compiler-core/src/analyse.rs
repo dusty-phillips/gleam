@@ -365,6 +365,7 @@ impl<'a, A> ModuleAnalyzer<'a, A> {
             has_body: true,
             has_erlang_external: false,
             has_javascript_external: false,
+            has_python_external: false,
         };
         let mut expr_typer = ExprTyper::new(
             environment,
@@ -441,6 +442,7 @@ impl<'a, A> ModuleAnalyzer<'a, A> {
             deprecation,
             external_erlang,
             external_javascript,
+            external_python,
             return_type: (),
             implementations: _,
         } = f;
@@ -461,8 +463,12 @@ impl<'a, A> ModuleAnalyzer<'a, A> {
         self.assert_valid_javascript_external(&name, external_javascript.as_ref(), location);
 
         // Find the external implementation for the current target, if one has been given.
-        let external =
-            target_function_implementation(target, &external_erlang, &external_javascript);
+        let external = target_function_implementation(
+            target,
+            &external_erlang,
+            &external_javascript,
+            &external_python,
+        );
         let (impl_module, impl_function) = implementation_names(external, &self.module_name, &name);
 
         // The function must have at least one implementation somewhere.
@@ -486,6 +492,7 @@ impl<'a, A> ModuleAnalyzer<'a, A> {
             has_body,
             has_erlang_external: external_erlang.is_some(),
             has_javascript_external: external_javascript.is_some(),
+            has_python_external: external_python.is_some(),
         };
 
         let typed_args = arguments
@@ -597,6 +604,7 @@ impl<'a, A> ModuleAnalyzer<'a, A> {
             body,
             external_erlang,
             external_javascript,
+            external_python,
             implementations,
         })
     }
@@ -1179,6 +1187,7 @@ impl<'a, A> ModuleAnalyzer<'a, A> {
             documentation,
             external_erlang,
             external_javascript,
+            external_python,
             deprecation,
             end_position: _,
             body: _,
@@ -1220,6 +1229,7 @@ impl<'a, A> ModuleAnalyzer<'a, A> {
             environment.target,
             external_erlang,
             external_javascript,
+            external_python,
         );
         let (impl_module, impl_function) = implementation_names(external, &self.module_name, name);
         let variant = ValueConstructorVariant::ModuleFn {
@@ -1307,10 +1317,12 @@ fn target_function_implementation<'a>(
     target: Target,
     external_erlang: &'a Option<(EcoString, EcoString)>,
     external_javascript: &'a Option<(EcoString, EcoString)>,
+    external_python: &'a Option<(EcoString, EcoString)>,
 ) -> &'a Option<(EcoString, EcoString)> {
     match target {
         Target::Erlang => external_erlang,
         Target::JavaScript => external_javascript,
+        Target::Python => external_python,
     }
 }
 
@@ -1488,6 +1500,7 @@ fn generalise_function(
         return_type,
         external_erlang,
         external_javascript,
+        external_python,
         implementations,
     } = function;
 
@@ -1503,8 +1516,12 @@ fn generalise_function(
     let type_ = type_::generalise(typ);
 
     // Insert the function into the module's interface
-    let external =
-        target_function_implementation(environment.target, &external_erlang, &external_javascript);
+    let external = target_function_implementation(
+        environment.target,
+        &external_erlang,
+        &external_javascript,
+        &external_python,
+    );
     let (impl_module, impl_function) = implementation_names(external, module_name, &name);
 
     let variant = ValueConstructorVariant::ModuleFn {
@@ -1546,6 +1563,7 @@ fn generalise_function(
         body,
         external_erlang,
         external_javascript,
+        external_python,
         implementations,
     })
 }

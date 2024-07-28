@@ -2930,6 +2930,14 @@ pub mod implementations {
     pub fn get_can_run_on_javascript(self) -> bool {
       self.reader.get_bool_field(4)
     }
+    #[inline]
+    pub fn get_uses_python_externals(self) -> bool {
+      self.reader.get_bool_field(5)
+    }
+    #[inline]
+    pub fn get_can_run_on_python(self) -> bool {
+      self.reader.get_bool_field(6)
+    }
   }
 
   pub struct Builder<'a> { builder: ::capnp::private::layout::StructBuilder<'a> }

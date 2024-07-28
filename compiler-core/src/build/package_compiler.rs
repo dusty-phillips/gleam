@@ -330,6 +330,9 @@ where
             TargetCodegenConfiguration::Erlang { app_file } => {
                 self.perform_erlang_codegen(modules, app_file.as_ref())
             }
+            TargetCodegenConfiguration::Python {} => {
+                unimplemented!("Still need to actually implement python codegen")
+            }
         }
     }
 
