@@ -9,7 +9,7 @@ use crate::{
         package_loader::{CodegenRequired, PackageLoader, StaleTracker},
         Mode, Module, Origin, Outcome, Package, SourceFingerprint, Target,
     },
-    codegen::{Erlang, ErlangApp, JavaScript, TypeScriptDeclarations},
+    codegen::{Erlang, ErlangApp, JavaScript, Python, TypeScriptDeclarations},
     config::PackageConfig,
     dep_tree, error,
     io::{CommandExecutor, FileSystemReader, FileSystemWriter, Stdio},
@@ -330,9 +330,7 @@ where
             TargetCodegenConfiguration::Erlang { app_file } => {
                 self.perform_erlang_codegen(modules, app_file.as_ref())
             }
-            TargetCodegenConfiguration::Python {} => {
-                unimplemented!("Still need to actually implement python codegen")
-            }
+            TargetCodegenConfiguration::Python {} => self.perform_python_codegen(modules),
         }
     }
 
@@ -398,6 +396,20 @@ where
 
         JavaScript::new(&self.out, typescript, prelude_location, self.target_support)
             .render(&self.io, modules)?;
+
+        if self.copy_native_files {
+            self.copy_project_native_files(&self.out, &mut written)?;
+        } else {
+            tracing::debug!("skipping_native_file_copying");
+        }
+
+        Ok(())
+    }
+
+    fn perform_python_codegen(&mut self, modules: &[Module]) -> Result<(), Error> {
+        let mut written = HashSet::new();
+
+        Python::new(&self.out, self.target_support).render(&self.io, modules)?;
 
         if self.copy_native_files {
             self.copy_project_native_files(&self.out, &mut written)?;

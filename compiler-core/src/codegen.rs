@@ -6,7 +6,7 @@ use crate::{
     io::FileSystemWriter,
     javascript,
     line_numbers::LineNumbers,
-    Result,
+    python, Result,
 };
 use itertools::Itertools;
 use std::fmt::Debug;
@@ -244,6 +244,49 @@ impl<'a> JavaScript<'a> {
             self.typescript,
         );
         tracing::debug!(name = ?js_name, "Generated js module");
+        writer.write(&path, &output?)
+    }
+}
+
+#[derive(Debug)]
+pub struct Python<'a> {
+    output_directory: &'a Utf8Path,
+    target_support: TargetSupport,
+}
+
+impl<'a> Python<'a> {
+    pub fn new(output_directory: &'a Utf8Path, target_support: TargetSupport) -> Self {
+        Self {
+            output_directory,
+            target_support,
+        }
+    }
+
+    pub fn render(&self, writer: &impl FileSystemWriter, modules: &[Module]) -> Result<()> {
+        for module in modules {
+            let py_name = module.name.clone();
+            self.py_module(writer, module, &py_name)?
+        }
+        Ok(())
+    }
+
+    fn py_module(
+        &self,
+        writer: &impl FileSystemWriter,
+        module: &Module,
+        py_name: &str,
+    ) -> Result<()> {
+        let name = format!("{py_name}.py");
+        let path = self.output_directory.join(name);
+        let line_numbers = LineNumbers::new(&module.code);
+        let output = python::module(
+            &module.ast,
+            &line_numbers,
+            &module.input_path,
+            &module.code,
+            self.target_support,
+        );
+        tracing::debug!(name = ?py_name, "Generated py module");
         writer.write(&path, &output?)
     }
 }

@@ -3028,6 +3028,22 @@ pub mod implementations {
     pub fn set_can_run_on_javascript(&mut self, value: bool)  {
       self.builder.set_bool_field(4, value);
     }
+    #[inline]
+    pub fn get_uses_python_externals(self) -> bool {
+      self.builder.get_bool_field(5)
+    }
+    #[inline]
+    pub fn set_uses_python_externals(&mut self, value: bool)  {
+      self.builder.set_bool_field(5, value);
+    }
+    #[inline]
+    pub fn get_can_run_on_python(self) -> bool {
+      self.builder.get_bool_field(6)
+    }
+    #[inline]
+    pub fn set_can_run_on_python(&mut self, value: bool)  {
+      self.builder.set_bool_field(6, value);
+    }
   }
 
   pub struct Pipeline { _typeless: ::capnp::any_pointer::Pipeline }

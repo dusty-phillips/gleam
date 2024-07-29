@@ -162,7 +162,16 @@ fn run_python(
     module: &str,
     arguments: Vec<String>,
 ) -> Result<i32, Error> {
-    return Ok(2);
+    let mut args = vec![];
+    let entry = write_python_entrypoint(paths, package, module)?;
+
+    args.push(entry.to_string());
+
+    for arg in arguments.into_iter() {
+        args.push(arg);
+    }
+
+    ProjectIO::new().exec("python3", &args, &[], None, Stdio::Inherit)
 }
 
 fn run_javascript_bun(
@@ -199,6 +208,25 @@ fn run_javascript_node(
     }
 
     ProjectIO::new().exec("node", &args, &[], None, Stdio::Inherit)
+}
+
+fn write_python_entrypoint(
+    paths: &ProjectPaths,
+    package: &str,
+    module: &str,
+) -> Result<Utf8PathBuf, Error> {
+    let path = paths
+        .build_directory_for_package(Mode::Dev, Target::Python, package)
+        .to_path_buf()
+        .join("gleam.main.py");
+    let module = format!(
+        r#"from {module } import main
+print("REMEMBER TO REMOVE THIS FROM write_python_entrypoint")
+main();
+"#,
+    );
+    crate::fs::write(&path, &module)?;
+    Ok(path)
 }
 
 fn write_javascript_entrypoint(

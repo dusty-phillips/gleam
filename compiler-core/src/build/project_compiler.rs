@@ -575,7 +575,7 @@ where
             CachedWarnings::Ignore
         };
 
-        // Compile project to Erlang or JavaScript source code
+        // Compile project to Erlang, JavaScript, or Python source code
         compiler.compile(
             &mut self.warnings,
             &mut self.importable_modules,

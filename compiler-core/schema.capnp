@@ -113,6 +113,8 @@ struct Implementations {
   usesJavascriptExternals @2 :Bool;
   canRunOnErlang @3 :Bool;
   canRunOnJavascript @4 :Bool;
+  usesPythonExternals @5 :Bool;
+  canRunOnPython @6 :Bool;
 }
 
 struct ValueConstructorVariant {

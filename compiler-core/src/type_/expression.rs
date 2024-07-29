@@ -79,7 +79,7 @@ pub struct FunctionDefinition {
     pub has_erlang_external: bool,
     /// The function has @external(JavaScript, "...", "...")
     pub has_javascript_external: bool,
-    /// The function has @external(Python, "...", "...")
+    /// The function has @external(python, "...", "...")
     pub has_python_external: bool,
 }
 

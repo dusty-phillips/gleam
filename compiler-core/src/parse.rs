@@ -3452,6 +3452,7 @@ where
         let target = match name.as_str() {
             "erlang" => Target::Erlang,
             "javascript" => Target::JavaScript,
+            "python" => Target::Python,
             _ => return parse_error(ParseErrorType::UnknownAttribute, SrcSpan::new(start, end)),
         };
 
