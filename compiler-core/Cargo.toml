@@ -19,7 +19,9 @@ capnp = "0"
 # Template rendering
 askama = "0"
 # Markdown parsing
-pulldown-cmark = { version = "0", default-features = false, features = ["html"] }
+pulldown-cmark = { version = "0", default-features = false, features = [
+  "html",
+] }
 # Non-empty vectors
 vec1 = "1"
 # XDG directory locations

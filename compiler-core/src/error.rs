@@ -8,7 +8,7 @@ use crate::{ast::BinOp, parse::error::ParseErrorType, type_::Type};
 use crate::{
     bit_array,
     diagnostic::Level,
-    javascript,
+    javascript, python,
     type_::{pretty::Printer, UnifyErrorSituation},
 };
 use ecow::EcoString;
@@ -203,6 +203,13 @@ file_names.iter().map(|x| x.as_str()).join(", "))]
     InvalidRuntime {
         target: Target,
         invalid_runtime: Runtime,
+    },
+
+    #[error("python codegen failed")]
+    Python {
+        path: Utf8PathBuf,
+        src: EcoString,
+        error: python::Error,
     },
 
     #[error("package downloading failed: {error}")]
@@ -3165,6 +3172,24 @@ Fix the warnings and try again."
                 javascript::Error::Unsupported { feature, location } => vec![Diagnostic {
                     title: "Unsupported feature for compilation target".into(),
                     text: format!("{feature} is not supported for JavaScript compilation."),
+                    hint: None,
+                    level: Level::Error,
+                    location: Some(Location {
+                        label: Label {
+                            text: None,
+                            span: *location,
+                        },
+                        path: path.clone(),
+                        src: src.clone(),
+                        extra_labels: vec![],
+                    }),
+                }],
+            },
+
+            Error::Python { src, path, error } => match error {
+                python::Error::Unsupported { feature, location } => vec![Diagnostic {
+                    title: "Unsupported feature for compilation target".into(),
+                    text: format!("{feature} is not supported for Python compilation."),
                     hint: None,
                     level: Level::Error,
                     location: Some(Location {
