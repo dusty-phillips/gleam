@@ -1,4 +1,5 @@
 mod expression;
+mod imports;
 
 use crate::analyse::TargetSupport;
 use crate::ast;
@@ -42,6 +43,7 @@ impl<'a> Generator<'a> {
     }
 
     pub fn compile(&mut self) -> Output<'a> {
+        let imports = self.collect_imports();
         let statements = self
             .module
             .definitions
@@ -50,7 +52,7 @@ impl<'a> Generator<'a> {
         let statements: Vec<_> =
             Itertools::intersperse(statements, Ok(pretty::lines(2))).try_collect()?;
 
-        Ok(docvec![statements])
+        Ok(docvec![imports.into_doc(), statements])
     }
 
     pub fn statement(&mut self, statement: &'a ast::TypedDefinition) -> Option<Output<'a>> {
@@ -86,6 +88,46 @@ impl<'a> Generator<'a> {
                 self.module_function(function)
             }
         }
+    }
+
+    fn collect_imports(&mut self) -> imports::Imports<'a> {
+        let mut imports = imports::Imports::new();
+
+        for statement in &self.module.definitions {
+            match statement {
+                ast::Definition::Import(ast::Import {
+                    module,
+                    as_name,
+                    unqualified_values: unqualified,
+                    package,
+                    ..
+                }) => {
+                    self.register_import(&mut imports, module, as_name, unqualified);
+                }
+
+                ast::Definition::Function(ast::Function {
+                    name: Some((_, name)),
+                    publicity,
+                    external_javascript: Some((module, function)),
+                    ..
+                }) => {
+                    self.register_external_function(
+                        &mut imports,
+                        *publicity,
+                        name,
+                        module,
+                        function,
+                    );
+                }
+
+                ast::Definition::Function(ast::Function { .. })
+                | ast::Definition::TypeAlias(ast::TypeAlias { .. })
+                | ast::Definition::CustomType(ast::CustomType { .. })
+                | ast::Definition::ModuleConstant(ast::ModuleConstant { .. }) => (),
+            }
+        }
+
+        imports
     }
 
     fn module_function(&mut self, function: &'a ast::TypedFunction) -> Option<Output<'a>> {
@@ -138,6 +180,98 @@ impl<'a> Generator<'a> {
             pretty::line(),
         ];
         Some(Ok(document))
+    }
+
+    fn register_import(
+        &mut self,
+        imports: &mut imports::Imports<'a>,
+        module: &'a str,
+        as_name: &'a Option<(ast::AssignName, ast::SrcSpan)>,
+        unqualified: &'a [ast::UnqualifiedImport],
+    ) {
+        // import gleam                    -> import gleam
+        // import gleam/io                 -> from gleam import io
+        // import gleam/io as inputOutput  -> from gleam import io as inputOutput
+        // import gleam/io.{println,debug}   -> from gleam.io import println, debug
+        // import gleam/io.{println as lineout}  -> from gleam.io import println as lineout
+
+        let path_parts: Vec<_> = module.split('/').collect();
+
+        // TODO: Very unlikely most of these cases are handled correctly
+        match (path_parts.as_slice(), as_name, unqualified) {
+            // import <nothing>
+            ([], _, _) => unreachable!("Expected a module"),
+            // import single_module
+            ([module], None, []) => imports.register_module(module.to_string(), vec![]),
+            // import single_module.{something}, import single_module.{something as else}
+            ([module], None, names) => imports.register_module(
+                module.to_string(),
+                names.iter().map(|unqualified| {
+                    imports::Member::new(
+                        unqualified.name.as_ref().to_doc(),
+                        unqualified.as_name.as_ref().map(|eco| eco.to_doc()),
+                    )
+                }),
+            ),
+            // import single_module as _discard, import parts/module as _discard
+            (_, Some((ast::AssignName::Discard(_), _)), []) => (),
+            // import single_module as something
+            ([module], Some((ast::AssignName::Variable(alias), _)), []) => imports.register_module(
+                "".to_string(),
+                vec![imports::Member::new(module.to_doc(), Some(alias.to_doc()))],
+            ),
+            // import parts/module
+            ([parts @ .., module], None, []) => imports.register_module(
+                parts.join("."),
+                vec![imports::Member::new(module.to_doc(), None)],
+            ),
+            // import parts/module as something
+            ([parts @ .., module], Some((ast::AssignName::Variable(alias), _)), []) => imports
+                .register_module(
+                    parts.join("."),
+                    vec![imports::Member::new(module.to_doc(), Some(alias.to_doc()))],
+                ),
+            // import parts/module.{foo} as nonsensical, import single_module.{foo} as nonsensical
+            (_, Some(_), _) => {
+                unreachable!("Import with both alias and unqualified imports")
+            }
+            //import parts/module.{something as else, anything}
+            (parts, None, names) => imports.register_module(
+                parts.join("."),
+                names.iter().map(|unqualified| {
+                    imports::Member::new(
+                        unqualified.name.as_ref().to_doc(),
+                        unqualified.as_name.as_ref().map(|eco| eco.to_doc()),
+                    )
+                }),
+            ),
+        }
+    }
+
+    fn register_external_function(
+        &mut self,
+        imports: &mut imports::Imports,
+        publicity: ast::Publicity,
+        name: &'a str,
+        module: &'a str,
+        fun: &'a str,
+    ) {
+        // TODO: External imports not implemented yet; JS code is below
+        // let needs_escaping = !is_usable_js_identifier(name);
+        // let member = Member {
+        //     name: fun.to_doc(),
+        //     alias: if name == fun && !needs_escaping {
+        //         None
+        //     } else if needs_escaping {
+        //         Some(Document::String(escape_identifier(name)))
+        //     } else {
+        //         Some(name.to_doc())
+        //     },
+        // };
+        // if publicity.is_importable() {
+        //     imports.register_export(maybe_escape_identifier_string(name))
+        // }
+        // imports.register_module(module.to_string(), [], [member]);
     }
 }
 
