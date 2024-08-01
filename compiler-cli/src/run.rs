@@ -215,18 +215,46 @@ fn write_python_entrypoint(
     package: &str,
     module: &str,
 ) -> Result<Utf8PathBuf, Error> {
-    let path = paths
+    let entrypoint_path = paths
         .build_directory_for_package(Mode::Dev, Target::Python, package)
         .to_path_buf()
         .join("gleam.main.py");
+
+    // TODO: This is horrible code and awful design; I just wanted to get something working
+    // This code creates an entry for each folder in the package dir so that
+    // folder can be placed on the sys.path so imports are the same as in gleam
+    // without needing to import from the package name.
+    //
+    // There is so much wrong here:
+    // * hardcoding mode and target
+    // * maipulating sys.path instead of using a custom finder
+    // * The filter_map can surely be less ugly
+    // * the fact this is only in the gleam entrypoint and wouldn't work for
+    // code trying to import from the lib
+    let packages_path = paths.build_directory_for_target(Mode::Dev, Target::Python);
+    let package_dirs = crate::fs::read_dir(packages_path)?
+        .filter_map(|dir_result| match dir_result.map(|dir| dir.into_path()) {
+            Ok(path) if path.is_dir() => Some(format!("\"{}\"", path)),
+            Ok(_) => None,
+            Err(_) => None,
+        })
+        .collect::<Vec<_>>()
+        .join(",\n");
+
     let module = format!(
-        r#"from {module } import main
-print("REMEMBER TO REMOVE THIS FROM write_python_entrypoint")
-main();
+        r#"import sys
+
+sys.path.extend([
+{package_dirs}
+])
+
+from {module} import main
+
+main()
 "#,
     );
-    crate::fs::write(&path, &module)?;
-    Ok(path)
+    crate::fs::write(&entrypoint_path, &module)?;
+    Ok(entrypoint_path)
 }
 
 fn write_javascript_entrypoint(
