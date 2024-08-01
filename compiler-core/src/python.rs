@@ -267,7 +267,6 @@ impl<'a> Generator<'a> {
                 Some(name.to_doc())
             },
         );
-        println!("Registering external import {:#?} {:#?}", module, member);
         imports.register_module(module.to_string(), [member]);
     }
 }
