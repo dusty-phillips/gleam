@@ -108,7 +108,7 @@ impl<'a> Generator<'a> {
                 ast::Definition::Function(ast::Function {
                     name: Some((_, name)),
                     publicity,
-                    external_javascript: Some((module, function)),
+                    external_python: Some((module, function)),
                     ..
                 }) => {
                     self.register_external_function(
@@ -208,7 +208,7 @@ impl<'a> Generator<'a> {
                 module.to_string(),
                 names.iter().map(|unqualified| {
                     imports::Member::new(
-                        unqualified.name.as_ref().to_doc(),
+                        maybe_escape_identifier_doc(unqualified.name.as_ref()).to_doc(),
                         unqualified.as_name.as_ref().map(|eco| eco.to_doc()),
                     )
                 }),
@@ -240,7 +240,7 @@ impl<'a> Generator<'a> {
                 parts.join("."),
                 names.iter().map(|unqualified| {
                     imports::Member::new(
-                        unqualified.name.as_ref().to_doc(),
+                        maybe_escape_identifier_doc(unqualified.name.as_ref()).to_doc(),
                         unqualified.as_name.as_ref().map(|eco| eco.to_doc()),
                     )
                 }),
@@ -250,28 +250,25 @@ impl<'a> Generator<'a> {
 
     fn register_external_function(
         &mut self,
-        imports: &mut imports::Imports,
+        imports: &mut imports::Imports<'a>,
         publicity: ast::Publicity,
         name: &'a str,
         module: &'a str,
         fun: &'a str,
     ) {
-        // TODO: External imports not implemented yet; JS code is below
-        // let needs_escaping = !is_usable_js_identifier(name);
-        // let member = Member {
-        //     name: fun.to_doc(),
-        //     alias: if name == fun && !needs_escaping {
-        //         None
-        //     } else if needs_escaping {
-        //         Some(Document::String(escape_identifier(name)))
-        //     } else {
-        //         Some(name.to_doc())
-        //     },
-        // };
-        // if publicity.is_importable() {
-        //     imports.register_export(maybe_escape_identifier_string(name))
-        // }
-        // imports.register_module(module.to_string(), [], [member]);
+        let needs_escaping = !is_usable_python_identifier(name);
+        let member = imports::Member::new(
+            fun.to_doc(),
+            if name == fun && !needs_escaping {
+                None
+            } else if needs_escaping {
+                Some(Document::String(escape_identifier(name)))
+            } else {
+                Some(name.to_doc())
+            },
+        );
+        println!("Registering external import {:#?} {:#?}", module, member);
+        imports.register_module(module.to_string(), [member]);
     }
 }
 
